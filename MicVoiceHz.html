@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <script type=text/javascript>
+        navigator.getUserMedia = navigator.getUserMedia
+                               || navigator.webkitGetUserMedia
+                               || navigator.mozGetUserMedia;
+
+        navigator.getUserMedia({ video : false, audio : true }, callback, console.log);
+
+        function callback(stream) {
+            var ctx = new AudioContext();
+            var mic = ctx.createMediaStreamSource(stream);
+            var analyser = ctx.createAnalyser();
+            mic.connect(analyser);
+
+            var data = new Uint8Array(analyser.frequencyBinCount);
+
+            function play() {
+                analyser.getByteFrequencyData(data);
+
+                // get fullest bin
+                 var idx = 0;
+                 for (var j=0; j < analyser.frequencyBinCount; j++) {
+                    if (data[j] > data[idx]) {
+                        idx = j;
+                    }
+                }
+                var frequency = idx * ctx.sampleRate / analyser.fftSize;
+                //console.log(frequency);
+                document.getElementById("showMicFrequency").value = frequency;
+                requestAnimationFrame(play);
+            }
+            play();
+        }
+
+        function change(){
+            document.getElementById("showFrequency").value = document.getElementById("frequency").value;
+            document.getElementById("showSec").value = document.getElementById("Sec").value;
+        }
+
+        function test(element){
+            var AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext){
+                element.disabled = true;
+                var audioContext = new AudioContext();
+                var gain = audioContext.createGain();
+                gain.gain.value = 0.1;
+                var oscillator = audioContext.createOscillator();
+                oscillator.addEventListener("ended", function(){
+                element.disabled = false;
+            });
+            oscillator.type = "sine";
+            oscillator.frequency.value = document.getElementById("frequency").value;
+            oscillator.detune.value = 0.0;
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            oscillator.start(0);
+            oscillator.stop(document.getElementById("Sec").value);
+            }
+        }
+    </script>
+    <body>
+    <table border="1" width="95%">
+        <colgroup>
+        <col width="40"/>
+        </colgroup>
+        <tbody>
+            <tr valign="top">
+               <td>Hz</td>
+                <td>
+                    <input id="frequency" type="range" min="0" max="4200" step="1" value="440" style="width: 400px;" oninput="change();"/>
+                    <input id="showFrequency" type="text" value="440" style="width: 40px;" readonly="true"/>
+                </td>
+            </tr>
+            <tr valign="top">
+                <td>Sec</td>
+                <td>
+                    <input id="Sec" type="range" min="0" max="60" step="1" value="5" style="width: 400px;" oninput="change();"/>
+                    <input id="showSec" type="text" value="5" style="width: 40px;" readonly="true"/>
+                </td>
+            </tr>
+            <tr valign="top">
+                <td>Frequency</td>
+                <td>
+                    <input id="showMicFrequency" type="text" value="0">
+                </td>
+            </tr>
+            <tr valign="top">
+                <td colspan="2">
+                    <input type="button" value="Play" onclick="test(this);"/>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    </body>
+</html>
